@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from './SocketContext';
+import { SOCKET_URL } from "./constants";
 
 const GlobalChat = () => {
-    const socket = useSocket();
+    const socket = useSocket(SOCKET_URL);
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
 
@@ -13,7 +14,7 @@ const GlobalChat = () => {
     };
 
     useEffect(() => {
-        if (!socket) return;
+        if (!socket.socket) return;
 
         socket.emit('join', 'global');
         socket.on('message', (message) => {
