@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import { SOCKET_URL } from "./constants";
+import {SOCKET_URL} from "./constants";
 
 const SocketContext = createContext();
 
@@ -15,8 +15,26 @@ const SocketProvider = ({ children }) => {
         return () => newSocket.close();
     }, []);
 
+    const addSocketListener = (event, handler) => {
+        if (socket) {
+            socket.on(event, handler);
+        }
+    };
+
+    const removeSocketListener = (event, handler) => {
+        if (socket) {
+            socket.off(event, handler);
+        }
+    };
+
+    const emitSocketEvent = (event, data) => {
+        if (socket) {
+            socket.emit(event, data);
+        }
+    };
+
     return (
-        <SocketContext.Provider value={socket}>
+        <SocketContext.Provider value={{ socket, addSocketListener, removeSocketListener, emitSocketEvent }}>
             {children}
         </SocketContext.Provider>
     );
