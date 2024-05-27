@@ -1,40 +1,44 @@
 const express = require('express');
-const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const http = require('http');
+const socketIo = require('socket.io');
+const path = require('path');
 
-let users = {};
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+const PORT = process.env.PORT || 3000;
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 io.on('connection', (socket) => {
-  console.log('a user connected');
-
-  socket.on('login', (userId) => {
-    users[userId] = socket.id;
-  });
-
-  socket.on('call', (data) => {
-    io.to(users[data.to]).emit('call', {
-      from: data.from,
-      signal: data.signal,
+  console.log('New client connected');
+  if (socket) {
+    socket.on('join', (room) => {
+      socket.join(room);
     });
-  });
 
-  socket.on('answer', (data) => {
-    io.to(users[data.to]).emit('answer', {
-      signal: data.signal,
-      from: data.from,
+    socket.on('message', (data) => {
+      io.to(data.room).emit('message', data.message);
     });
-  });
 
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
-  });
+    // Handle WebRTC signaling messages
+    socket.on('offer', (data) => {
+      io.to(data.room).emit('offer', data.offer);
+    });
 
-  socket.on('message', (data) => {
-    io.emit('message', data);
-  });
+    socket.on('answer', (data) => {
+      io.to(data.room).emit('answer', data.answer);
+    });
+
+    socket.on('ice-candidate', (data) => {
+      io.to(data.room).emit('ice-candidate', data.candidate);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Client disconnected');
+    });
+  }
 });
 
-http.listen(3000, () => {
-  console.log('listening on *:3001');
-});
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
